@@ -9,13 +9,15 @@ import SailingOutlinedIcon from '@mui/icons-material/SailingOutlined';
 import { useState } from 'react';
 import { AppLayout, Card, TotalBar } from '../components';
 import { colors } from '../theme';
-import { fcl, usd, hsExamples } from '../data';
+import { chapter70Catalog, fcl, usd } from '../data';
+import { useShipmentStore } from '../store/shipmentStore';
 
 const swatch = ['#1565F0', '#7C4DFF', '#4CC9A0', '#FF9F43', '#FF6B6B'];
 export default function Resultado() {
   const nav = useNavigate();
   const [tab, setTab] = useState(0);
-  const hs = hsExamples[0];
+  const { selectedProduct } = useShipmentStore();
+  const hs = chapter70Catalog.find((item) => item.hs === selectedProduct.hs) ?? selectedProduct ?? chapter70Catalog[0];
   return (
     <AppLayout title="Resultado de tu simulación" subtitle="Aquí encontrarás el detalle de costos, clasificación arancelaria, impuestos y más."
       back={['Volver al simulador', '/simulador']}
@@ -25,7 +27,7 @@ export default function Resultado() {
           <Stack spacing={3}>
             <Card>
               <Grid container spacing={2}>
-                {[['Origen', 'Shanghái (CN)'], ['Destino', 'Callao (PE)'], ['Tipo de contenedor', "20 pies (20'DC)"], ['Mercancía', 'Celulares inteligentes'], ['Incoterm', 'FOB']].map(([a, b]) => (
+                {[['Origen', 'Shanghái (CN)'], ['Destino', 'Callao (PE)'], ['Tipo de contenedor', "20 pies (20'DC)"], ['Mercancía', hs.name], ['Incoterm', 'FOB']].map(([a, b]) => (
                   <Grid key={a} size={{ xs: 6, md: 2.4 }}><Typography fontSize={12} color="text.secondary">{a}</Typography><Typography fontWeight={600} fontSize={14}>{b}</Typography></Grid>))}
               </Grid>
             </Card>
@@ -36,7 +38,7 @@ export default function Resultado() {
                   <Typography fontWeight={600} sx={{ mt: 2 }}>{hs.name}</Typography>
                   <Typography fontSize={13} color="text.secondary" sx={{ mb: 2 }}>{hs.desc}</Typography>
                   <Box sx={{ bgcolor: colors.tint, borderRadius: 2, p: 1.5 }}><Typography fontSize={12}>Subpartida nacional (10 dígitos)</Typography><Typography fontWeight={700} fontSize={18}>{hs.hs}</Typography></Box>
-                  <Stack direction="row" spacing={4} sx={{ mt: 2 }}><Box><Typography fontSize={12} color="text.secondary">Unidad de medida</Typography><Typography fontSize={13} fontWeight={600}>{hs.unit}</Typography></Box><Box><Typography fontSize={12} color="text.secondary">País de origen</Typography><Typography fontSize={13} fontWeight={600}>China</Typography></Box></Stack>
+                  <Stack direction="row" spacing={4} sx={{ mt: 2 }}><Box><Typography fontSize={12} color="text.secondary">Unidad de medida</Typography><Typography fontSize={13} fontWeight={600}>{hs.unit}</Typography></Box><Box><Typography fontSize={12} color="text.secondary">Arancel</Typography><Typography fontSize={13} fontWeight={600}>{hs.duty}</Typography></Box></Stack>
                 </Card>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>

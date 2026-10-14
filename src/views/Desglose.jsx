@@ -1,5 +1,5 @@
 'use client';
-import { Grid, Typography, Stack, Button, Table, TableHead, TableBody, TableRow, TableCell, Box, Divider } from '@mui/material';
+import { Grid, Typography, Stack, Button, Table, TableHead, TableBody, TableRow, TableCell, Box, Divider, useMediaQuery, useTheme } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DirectionsBoatOutlinedIcon from '@mui/icons-material/DirectionsBoatOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
@@ -7,10 +7,15 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { AppLayout, Card, SectionTitle, TotalBar } from '../components';
 import { colors } from '../theme';
-import { lcl, usd } from '../data';
+import { chapter70Catalog, lcl, usd } from '../data';
+import { useShipmentStore } from '../store/shipmentStore';
 
 const th = { fontWeight: 600, color: colors.muted, bgcolor: colors.tint };
 export default function Desglose() {
+  const theme = useTheme();
+  const mobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { selectedProduct } = useShipmentStore();
+  const hs = chapter70Catalog.find((item) => item.hs === selectedProduct.hs) ?? selectedProduct ?? chapter70Catalog[0];
   const logistics = lcl.logistics.reduce((s, r) => s + r[2], 0);
   const tributos = lcl.taxes.reduce((s, r) => s + r[2], 0);
   return (
@@ -18,7 +23,7 @@ export default function Desglose() {
       <Stack spacing={3}>
         <Card>
           <Grid container spacing={2}>
-            {[['Tipo de carga', 'LCL (Carga suelta)'], ['Origen', 'Shanghái (CN)'], ['Destino', 'Callao (PE)'], ['Mercancía', 'Celulares inteligentes (HS: 8517.12.00.00)']].map(([a, b]) => (
+            {[['Tipo de carga', 'LCL (Carga suelta)'], ['Origen', 'Shanghái (CN)'], ['Destino', 'Callao (PE)'], ['Mercancía', `${hs.name} (HS: ${hs.hs})`]].map(([a, b]) => (
               <Grid key={a} size={{ xs: 6, md: 3 }}><Typography fontSize={12} color="text.secondary">{a}</Typography><Typography fontWeight={600}>{b}</Typography></Grid>))}
           </Grid>
         </Card>
@@ -33,14 +38,45 @@ export default function Desglose() {
             <Stack spacing={3}>
               <Card>
                 <SectionTitle icon={LocalShippingOutlinedIcon} title="1. Costo de flete y logística" sub="Incluye el transporte marítimo, manejo en puerto, consolidación y otros servicios logísticos." />
-                <Table size="small"><TableHead><TableRow><TableCell sx={th}>Concepto</TableCell><TableCell sx={th}>Descripción</TableCell><TableCell sx={th} align="right">Monto (USD)</TableCell></TableRow></TableHead>
-                  <TableBody>{lcl.logistics.map(([c, d, m]) => <TableRow key={c}><TableCell>{c}</TableCell><TableCell sx={{ color: 'primary.main' }}>{d}</TableCell><TableCell align="right">{m.toFixed(2)}</TableCell></TableRow>)}</TableBody></Table>
+                {mobile ? (
+                  <Stack spacing={1.5}>
+                    {lcl.logistics.map(([c, d, m]) => (
+                      <Box key={c} sx={{ border: `1px solid ${colors.line}`, borderRadius: 2, p: 1.5, bgcolor: '#fff' }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                          <Typography fontWeight={700} sx={{ wordBreak: 'break-word' }}>{c}</Typography>
+                          <Typography fontWeight={700} color="primary.main">{m.toFixed(2)}</Typography>
+                        </Stack>
+                        <Typography fontSize={12} color="text.secondary" sx={{ mt: .75, wordBreak: 'break-word' }}>{d}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}><TableHead><TableRow><TableCell sx={th}>Concepto</TableCell><TableCell sx={th}>Descripción</TableCell><TableCell sx={th} align="right">Monto (USD)</TableCell></TableRow></TableHead>
+                    <TableBody>{lcl.logistics.map(([c, d, m]) => <TableRow key={c}><TableCell sx={{ wordBreak: 'break-word' }}>{c}</TableCell><TableCell sx={{ color: 'primary.main', wordBreak: 'break-word' }}>{d}</TableCell><TableCell align="right">{m.toFixed(2)}</TableCell></TableRow>)}</TableBody></Table>
+                )}
                 <Box sx={{ mt: 1.5 }}><TotalBar label="Total costo logístico" value={usd(logistics)} /></Box>
               </Card>
               <Card>
                 <SectionTitle icon={ReceiptLongOutlinedIcon} title="2. Tributos de importación (Perú)" sub="Calculados según la clasificación arancelaria y normativa vigente de SUNAT." />
-                <Table size="small"><TableHead><TableRow><TableCell sx={th}>Concepto</TableCell><TableCell sx={th} align="right">Base imponible (USD)</TableCell><TableCell sx={th}>Tasa</TableCell><TableCell sx={th} align="right">Monto (USD)</TableCell></TableRow></TableHead>
-                  <TableBody>{lcl.taxes.map(([c, t, m]) => <TableRow key={c}><TableCell>{c}</TableCell><TableCell align="right">{t === '-' ? '-' : lcl.base.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell><TableCell>{t}</TableCell><TableCell align="right">{m.toFixed(2)}</TableCell></TableRow>)}</TableBody></Table>
+                {mobile ? (
+                  <Stack spacing={1.5}>
+                    {lcl.taxes.map(([c, t, m]) => (
+                      <Box key={c} sx={{ border: `1px solid ${colors.line}`, borderRadius: 2, p: 1.5, bgcolor: '#fff' }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                          <Typography fontWeight={700} sx={{ wordBreak: 'break-word' }}>{c}</Typography>
+                          <Typography fontWeight={700} color="primary.main">{m.toFixed(2)}</Typography>
+                        </Stack>
+                        <Stack spacing={0.4} sx={{ mt: .75 }}>
+                          <Typography fontSize={12} color="text.secondary">Base imponible: {t === '-' ? '-' : lcl.base.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Typography>
+                          <Typography fontSize={12} color="text.secondary">Tasa: {t}</Typography>
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}><TableHead><TableRow><TableCell sx={th}>Concepto</TableCell><TableCell sx={th} align="right">Base imponible (USD)</TableCell><TableCell sx={th}>Tasa</TableCell><TableCell sx={th} align="right">Monto (USD)</TableCell></TableRow></TableHead>
+                    <TableBody>{lcl.taxes.map(([c, t, m]) => <TableRow key={c}><TableCell sx={{ wordBreak: 'break-word' }}>{c}</TableCell><TableCell align="right">{t === '-' ? '-' : lcl.base.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell><TableCell>{t}</TableCell><TableCell align="right">{m.toFixed(2)}</TableCell></TableRow>)}</TableBody></Table>
+                )}
                 <Box sx={{ mt: 1.5 }}><TotalBar label="Total tributos" value={usd(tributos)} /></Box>
               </Card>
             </Stack>
@@ -58,7 +94,7 @@ export default function Desglose() {
               <Card>
                 <Typography variant="h6" fontSize={17} sx={{ mb: 1 }}>Información de la mercancía</Typography>
                 <Typography fontWeight={600}>Celulares inteligentes</Typography>
-                {['HS: 8517.12.00.00', 'Unidad de medida: Unidad (UND)', 'Valor FOB: USD 8,000.00', 'Peso bruto: 420 kg', 'Volumen: 2.8 m³'].map((t) => <Typography key={t} fontSize={13} color="text.secondary">{t}</Typography>)}
+                {[`HS: ${hs.hs}`, `Unidad de medida: ${hs.unit}`, 'Valor FOB: USD 8,000.00', 'Peso bruto: 420 kg', 'Volumen: 2.8 m³'].map((t) => <Typography key={t} fontSize={13} color="text.secondary">{t}</Typography>)}
               </Card>
             </Stack>
           </Grid>

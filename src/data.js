@@ -1,3 +1,5 @@
+import chapter70CatalogJson from './data/arancel-capitulo-70.json';
+
 export const ports = [
   { code: 'CNSHA', name: 'Shanghái (CN)', region: 'Asia' },
   { code: 'CNNGB', name: 'Ningbó (CN)', region: 'Asia' },
@@ -9,6 +11,16 @@ export const ports = [
 ];
 export const containers = ["Contenedor de 20 pies (20'DC)", "Contenedor de 40 pies (40'DC)", "Contenedor de 40 pies HC (40'HC)", 'Refrigerado (Reefer)'];
 export const usd = (n) => `US$ ${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export const chapter70Catalog = chapter70CatalogJson;
+
+export const findArancelMatch = (query = '') => {
+  const q = query.trim().toLowerCase();
+  if (!q) return chapter70CatalogJson.slice(0, 8);
+  return chapter70CatalogJson.filter((item) => {
+    const haystack = `${item.hs} ${item.name} ${item.desc} ${item.category} ${item.search}`.toLowerCase();
+    return haystack.includes(q);
+  }).slice(0, 10);
+};
 
 export const fcl = {
   total: 2458.32, fob: 8000,
@@ -24,6 +36,7 @@ export const lcl = {
   base: 1248.5,
 };
 export const hsExamples = [
+  ...chapter70CatalogJson,
   { hs: '8517.12.00.00', name: 'Celulares inteligentes', desc: 'Teléfonos móviles (smartphones) con pantalla táctil, sistema operativo y conectividad a internet.', unit: 'Unidad (UND)', duty: '0%' },
   { hs: '8471.30.00.00', name: 'Computadoras portátiles', desc: 'Máquinas automáticas para tratamiento de datos, portátiles, de peso ≤ 10 kg.', unit: 'Unidad (UND)', duty: '0%' },
   { hs: '6403.99.00.00', name: 'Calzado deportivo', desc: 'Calzado con suela de caucho o plástico y parte superior de cuero natural.', unit: 'Par (PAR)', duty: '11%' },

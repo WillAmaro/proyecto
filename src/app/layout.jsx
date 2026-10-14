@@ -5,7 +5,7 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import Providers from './providers';
 
-export const metadata = { title: 'CargoSim · Importa con confianza', description: 'Simulador de costos de importación a Perú' };
+export const metadata = { title: 'HW LOGISTIC · Importa con confianza', description: 'Simulador de costos de importación a Perú' };
 
 export default function RootLayout({ children }) {
   return (

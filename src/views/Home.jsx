@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from '../nav';
-import { Box, Typography, Button, Grid, Stack, TextField, MenuItem, InputAdornment, Container } from '@mui/material';
+import { Box, Typography, Button, Grid, Stack, TextField, MenuItem, InputAdornment, Container, Autocomplete } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import SailingOutlinedIcon from '@mui/icons-material/SailingOutlined';
@@ -16,9 +16,13 @@ import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TuneIcon from '@mui/icons-material/Tune';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { PublicLayout, Card, heroBg } from '../components';
 import { colors } from '../theme';
-import { ports, containers } from '../data';
+import { ports, containers, chapter70Catalog, findArancelMatch } from '../data';
+import { useShipmentStore } from '../store/shipmentStore';
+
+const WHATSAPP_URL = 'https://wa.me/51938598840?text=Hola%2C%20necesito%20ayuda%20con%20mi%20simulaci%C3%B3n.';
 
 const features = [
   [Inventory2OutlinedIcon, 'Alquiler de contenedores', 'Conoce el costo según el tipo y la ruta de tu carga.', '/simulador'],
@@ -37,9 +41,22 @@ const stack = ['#E4572E', '#1565F0', '#F2A93B', '#2B9E8C', '#7C4DFF', '#D94F70']
 
 export default function Home() {
   const go = useNavigate();
+  const { selectedProduct, setSelectedHs, clearSelectedHs } = useShipmentStore();
   const [f, setF] = useState({ origin: 'CNSHA', dest: 'PECLL', cont: containers[0], hs: '', date: null });
+  const [hsQuery, setHsQuery] = useState(selectedProduct ? `${selectedProduct.hs} - ${selectedProduct.name}` : '');
+  const [matchOptions, setMatchOptions] = useState(() => findArancelMatch(hsQuery));
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const icon = (I) => ({ input: { startAdornment: <InputAdornment position="start"><I fontSize="small" color="primary" /></InputAdornment> } });
+  const defaultHsValue = selectedProduct ? chapter70Catalog.find((item) => item.hs === selectedProduct.hs) ?? null : null;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMatchOptions(findArancelMatch(hsQuery));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [hsQuery]);
+
   return (
     <PublicLayout>
       {/* Hero */}
@@ -72,7 +89,50 @@ export default function Home() {
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}><TextField select label="Puerto de destino (Perú)" value={f.dest} onChange={set('dest')} slotProps={icon(PlaceOutlinedIcon)}>{ports.filter((p) => p.peru).map((p) => <MenuItem key={p.code} value={p.code}>{p.name}</MenuItem>)}</TextField></Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}><TextField select label="Tipo de contenedor" value={f.cont} onChange={set('cont')} slotProps={icon(Inventory2OutlinedIcon)}>{containers.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}</TextField></Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}><DatePicker label="Fecha estimada de embarque" disablePast value={f.date} onChange={(v) => setF({ ...f, date: v })} slotProps={{ textField: { size: 'small', fullWidth: true } }} /></Grid>
-            <Grid size={{ xs: 12, md: 8, lg: 9 }}><TextField label="Mercancía (HS)" placeholder="Buscar por descripción o código HS" value={f.hs} onChange={set('hs')} slotProps={icon(SearchIcon)} /></Grid>
+            <Grid size={{ xs: 12, md: 8, lg: 9 }}>
+              <Autocomplete
+                freeSolo
+                options={matchOptions}
+                value={defaultHsValue}
+                inputValue={hsQuery}
+                onInputChange={(_, v, reason) => {
+                  if (reason === 'clear') {
+                    clearSelectedHs();
+                    setHsQuery('');
+                    return;
+                  }
+                  if (reason === 'input') {
+                    setHsQuery(v);
+                  }
+                }}
+                onChange={(_, newValue) => {
+                  if (newValue && typeof newValue === 'object') {
+                    setSelectedHs(newValue);
+                    setHsQuery(`${newValue.hs} - ${newValue.name}`);
+                    return;
+                  }
+                  clearSelectedHs();
+                  setHsQuery('');
+                }}
+                getOptionLabel={(option) => typeof option === 'string' ? option : `${option.hs} - ${option.name}`}
+                isOptionEqualToValue={(option, value) => option.hs === value.hs}
+                renderOption={(props, option) => {
+                  const { key: _key, ...optionProps } = props;
+                  const optionKey = `${option.hs ?? 'item'}-${option.name ?? 'name'}`;
+                  return (
+                    <Box component="li" {...optionProps}  key={optionKey} sx={{ display: 'block' }}>
+                      <Typography  key={optionKey} fontWeight={700}>{option.hs}</Typography>
+                      <Typography  key={`name-${optionKey}`} fontSize={12} color="text.secondary">{option.name}</Typography>
+                    </Box>
+                  );
+                }}
+                renderInput={(params) => <TextField {...params} label="Mercancía (HS)" placeholder="Busca por código o descripción" />}
+              
+                noOptionsText="No encontramos coincidencias"
+                clearOnEscape
+                fullWidth
+              />
+            </Grid>
             <Grid size={{ xs: 12, md: 4, lg: 3 }}><Button fullWidth variant="contained" size="large" endIcon={<ArrowForwardIcon />} onClick={() => go('/resultado')} sx={{ height: 40 }}>Calcular costo</Button></Grid>
           </Grid>
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={1} sx={{ mt: 2, bgcolor: colors.tint, borderRadius: 2, px: 2, py: 1 }}>
@@ -119,7 +179,22 @@ export default function Home() {
               <Typography sx={{ opacity: .85, mb: 3 }}>Te damos la información que necesitas para tomar mejores decisiones y hacer crecer tu negocio.</Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <Button variant="contained" onClick={() => go('/simulador')}>Ir al simulador</Button>
-                <Button variant="outlined" sx={{ color: '#fff', borderColor: 'rgba(255,255,255,.5)' }}>Contactar asesor</Button>
+                <Button
+                  component="a"
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="outlined"
+                  startIcon={<WhatsAppIcon />}
+                  sx={{
+                    color: '#fff',
+                    borderColor: 'rgba(255,255,255,.5)',
+                    bgcolor: 'rgba(255,255,255,.04)',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,.08)', borderColor: '#fff' },
+                  }}
+                >
+                  Contactar asesor
+                </Button>
               </Stack>
             </Box>
           </Grid>
