@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Box, Typography, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Tooltip, IconButton, Button, Paper, Stack, useMediaQuery } from '@mui/material';
@@ -20,7 +20,7 @@ export const heroBg = `linear-gradient(100deg, ${colors.navyDeep} 20%, rgba(10,3
 
 const nav = [['Inicio', '/', HomeOutlinedIcon], ['Simulador', '/simulador', CalculateOutlinedIcon], ['Aranceles y Clasificación', '/aranceles', GavelOutlinedIcon], ['Puertos y Rutas', '/puertos', RouteOutlinedIcon]];
 const W_OPEN = 252, W_MINI = 72, W_RAIL = 64;
-const WHATSAPP_URL = 'https://wa.me/51938598840?text=Hola%2C%20necesito%20ayuda%20con%20mi%20simulaci%C3%B3n.';
+const WHATSAPP_URL = 'https://wa.me/51938598840?text=Hola%2C%20necesito%20ayuda%20con%20mi%20cotizaci%C3%B3n.';
 
 function SidebarContent({ open, onToggle }) {
   const path = usePathname();
@@ -90,6 +90,16 @@ export function Shell({ children }) {
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const [open, setOpen] = useState(true);
   const [mOpen, setMOpen] = useState(false);
+
+  useEffect(() => {
+    if (mobile) {
+      setOpen(false);
+      setMOpen(false);
+    } else {
+      setOpen(true);
+    }
+  }, [mobile]);
+
   const w = mobile ? W_RAIL : open ? W_OPEN : W_MINI;
   const paper = { bgcolor: colors.navy, border: 0, overflowX: 'hidden' };
   return (
