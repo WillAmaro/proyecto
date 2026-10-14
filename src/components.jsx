@@ -88,7 +88,7 @@ function SidebarContent({ open, onToggle }) {
 export function Shell({ children }) {
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(mobile ? false : true);
   const [mOpen, setMOpen] = useState(false);
 
   useEffect(() => {
