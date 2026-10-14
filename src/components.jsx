@@ -88,17 +88,17 @@ function SidebarContent({ open, onToggle }) {
 export function Shell({ children }) {
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [open, setOpen] = useState(mobile ? false : true);
+  const [open, setOpen] = useState(false);
   const [mOpen, setMOpen] = useState(false);
 
-  useEffect(() => {
-    if (mobile) {
-      setOpen(false);
-      setMOpen(false);
-    } else {
-      setOpen(true);
-    }
-  }, [mobile]);
+  // useEffect(() => {
+  //   if (mobile) {
+  //     setOpen(false);
+  //     setMOpen(false);
+  //   } else {
+  //     setOpen(true);
+  //   }
+  // }, [mobile]);
 
   const w = mobile ? W_RAIL : open ? W_OPEN : W_MINI;
   const paper = { bgcolor: colors.navy, border: 0, overflowX: 'hidden' };
