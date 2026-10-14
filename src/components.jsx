@@ -90,15 +90,16 @@ export function Shell({ children }) {
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
   const [open, setOpen] = useState(false);
   const [mOpen, setMOpen] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // useEffect(() => {
-  //   if (mobile) {
-  //     setOpen(false);
-  //     setMOpen(false);
-  //   } else {
-  //     setOpen(true);
-  //   }
-  // }, [mobile]);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  if (!ready) {
+    return <Box sx={{ minHeight: '100vh', bgcolor: colors.navy }} />;
+  }
 
   const w = mobile ? W_RAIL : open ? W_OPEN : W_MINI;
   const paper = { bgcolor: colors.navy, border: 0, overflowX: 'hidden' };
