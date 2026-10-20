@@ -1,16 +1,17 @@
 'use client';
-import { Grid, Typography, Stack, Button, Table, TableHead, TableBody, TableRow, TableCell, Box, Divider, useMediaQuery, useTheme } from '@mui/material';
+import { Grid, Typography, Stack, Button, Table, TableHead, TableBody, TableRow, TableCell, Box, Divider, Tabs, Tab, LinearProgress, useMediaQuery, useTheme } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import DirectionsBoatOutlinedIcon from '@mui/icons-material/DirectionsBoatOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { useState } from 'react';
 import { AppLayout, Card, SectionTitle, TotalBar } from '../components';
 import { colors } from '../theme';
 import { chapter70Catalog, lcl, usd } from '../data';
 import { useShipmentStore } from '../store/shipmentStore';
 
 const th = { fontWeight: 600, color: colors.muted, bgcolor: colors.tint };
+const swatch = ['#1565F0', '#7C4DFF', '#4CC9A0'];
 export default function Desglose() {
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -18,6 +19,9 @@ export default function Desglose() {
   const hs = chapter70Catalog.find((item) => item.hs === selectedProduct.hs) ?? selectedProduct ?? chapter70Catalog[0];
   const logistics = lcl.logistics.reduce((s, r) => s + r[2], 0);
   const tributos = lcl.taxes.reduce((s, r) => s + r[2], 0);
+  const costItems = [['Costo logístico (flete + gestión)', logistics], ['Tributos de importación', tributos], ['Gastos adicionales (opcional)', lcl.extras]];
+  const breakdownTotal = costItems.reduce((sum, [, value]) => sum + value, 0);
+  const [tab, setTab] = useState(0);
   return (
     <AppLayout back={['Volver a la simulación', '/simulador/lcl']} title="Desglose de costos" subtitle="Aquí puedes ver el detalle de todos los costos de tu importación, incluyendo flete, gastos logísticos y tributos aplicables en Perú.">
       <Stack spacing={3}>
@@ -26,12 +30,6 @@ export default function Desglose() {
             {[['Tipo de carga', 'LCL (Carga suelta)'], ['Origen', 'Shanghái (CN)'], ['Destino', 'Callao (PE)'], ['Mercancía', `${hs.name} (HS: ${hs.hs})`]].map(([a, b]) => (
               <Grid key={a} size={{ xs: 6, md: 3 }}><Typography fontSize={12} color="text.secondary">{a}</Typography><Typography fontWeight={600}>{b}</Typography></Grid>))}
           </Grid>
-        </Card>
-        <Card sx={{ bgcolor: colors.tint }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Box><Typography fontWeight={700} fontSize={18}>Costo total estimado de la importación</Typography><Typography fontSize={13} color="text.secondary">Este monto incluye el costo logístico y los tributos aplicables en Perú.</Typography></Box>
-            <Box textAlign="right"><Typography variant="h4" color="primary">{usd(lcl.total)}</Typography><Typography fontSize={11} color="text.secondary">(referencial, sujeto a variación)</Typography></Box>
-          </Stack>
         </Card>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, lg: 8 }}>
@@ -83,12 +81,39 @@ export default function Desglose() {
           </Grid>
           <Grid size={{ xs: 12, lg: 4 }}>
             <Stack spacing={3}>
+              <Card sx={{ bgcolor: colors.navy, color: '#fff' }}>
+                <Typography fontWeight={600}>Costo total estimado</Typography>
+                <Typography variant="h4">{usd(lcl.total)}</Typography>
+                <Typography fontSize={12} sx={{ opacity: .8 }}>Monto referencial de la simulación, sujeto a variación.</Typography>
+              </Card>
               <Card>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}><Typography variant="h6" fontSize={17}>Resumen de costos</Typography><Button size="small" variant="outlined" startIcon={<PictureAsPdfIcon />}>Descargar PDF</Button></Stack>
-                {[['Costo logístico (flete + gestión)', logistics], ['Tributos de importación', tributos]].map(([l, v]) => <Stack key={l} direction="row" justifyContent="space-between" sx={{ py: .8 }}><Typography fontSize={13}>{l}</Typography><b>{usd(v)}</b></Stack>)}
+                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                  <Typography variant="h6" fontSize={17}>Resumen de costos</Typography>
+                  <Button size="small" variant="outlined" startIcon={<PictureAsPdfIcon />}>Descargar PDF</Button>
+                </Stack>
+                <Typography fontSize={12} color="text.secondary">Distribución proporcional de los rubros del desglose.</Typography>
+                <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 2 }}>
+                  <Tab label="Vista por rubro" />
+                  <Tab label="Vista porcentual" />
+                </Tabs>
+                <Stack spacing={1.5}>
+                  {costItems.map(([label, value], index) => {
+                    const percentage = breakdownTotal ? (value / breakdownTotal) * 100 : 0;
+                    return (
+                      <Box key={label}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1} sx={{ mb: .5 }}>
+                          <Typography fontSize={13}>{label}</Typography>
+                          <Typography fontSize={13} fontWeight={600} sx={{ whiteSpace: 'nowrap' }}>
+                            {tab ? `${percentage.toFixed(1)}%` : usd(value)}
+                          </Typography>
+                        </Stack>
+                        <LinearProgress variant="determinate" value={percentage} sx={{ height: 8, borderRadius: 4, bgcolor: colors.tint, '& .MuiLinearProgress-bar': { bgcolor: swatch[index] } }} />
+                      </Box>
+                    );
+                  })}
+                </Stack>
                 <Divider />
-                <Stack direction="row" justifyContent="space-between" sx={{ py: .8 }}><Typography fontSize={13} fontWeight={600}>Subtotal</Typography><b>{usd(logistics + tributos)}</b></Stack>
-                <Stack direction="row" justifyContent="space-between" sx={{ py: .8 }}><Typography fontSize={13}>Gastos adicionales (opcional)</Typography><b>{usd(lcl.extras)}</b></Stack>
+                <Stack direction="row" justifyContent="space-between" sx={{ py: .8 }}><Typography fontSize={13} fontWeight={600}>Subtotal logístico + tributos</Typography><b>{usd(logistics + tributos)}</b></Stack>
                 <TotalBar big label="Total estimado" value={usd(lcl.total)} />
               </Card>
               <Card>
